@@ -49,6 +49,11 @@ jobs:
             "build-tools;33.0.2" \
             "platforms;android-30"
 
+      - name: Link SDK for Buildozer
+        run: |
+          mkdir -p .buildozer/android/platform
+          ln -s $HOME/android-sdk .buildozer/android/platform/android-sdk
+
       - name: Ensure buildozer.spec exists
         run: |
           if [ ! -f buildozer.spec ]; then
