@@ -5,8 +5,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -22,17 +20,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y openjdk-11-jdk-headless git
       - name: Install Android SDK
-        run: |
-          wget https://dl.google.com/android/repository/command-line-tools-linux-9471167_latest.zip
-          unzip command-line-tools-linux-9471167_latest.zip
-          mkdir -p $ANDROID_HOME/cmdline-tools/latest
-          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
+        uses: android-actions/setup-android@v3
       - name: Build APK
         env:
-          PATH: $PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           [ -f buildozer.spec ] && rm buildozer.spec || true
           buildozer init
