@@ -24,7 +24,7 @@ jobs:
             libffi-dev \
             python3-pip python3-setuptools python3-wheel \
             zip unzip git openjdk-11-jdk-headless \
-            libssl-dev libffi-dev python3-dev \
+            libssl-dev python3-dev \
             libgl1-mesa-dev libgles2-mesa-dev
 
       - name: Set up Python
@@ -46,6 +46,7 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
 
