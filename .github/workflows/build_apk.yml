@@ -27,6 +27,8 @@ jobs:
           mv $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest
           export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+          mkdir -p $ANDROID_HOME/tools/bin
+          ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
       - name: Build APK
