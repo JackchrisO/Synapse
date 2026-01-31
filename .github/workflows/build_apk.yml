@@ -38,7 +38,7 @@ jobs:
         env:
           PATH: $PATH:$ANDROID_HOME/cmdline-tools/latest/bin
         run: |
-          rm -f buildozer.spec
+          [ -f buildozer.spec ] && rm buildozer.spec || true
           buildozer init
           echo "android.api = 30" >> buildozer.spec
           echo "android.minapi = 21" >> buildozer.spec
