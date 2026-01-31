@@ -29,6 +29,8 @@ jobs:
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
+        env:
+          ANDROID_HOME: $HOME/Android
       - name: Build APK
         env:
           ANDROID_HOME: $HOME/Android
@@ -44,4 +46,3 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ndsn.apk
-          path: bin/*.apk
