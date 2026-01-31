@@ -22,18 +22,17 @@ jobs:
       - name: Install Android SDK
         run: |
           wget https://dl.google.com/android/repository/commandlinetools-linux-14742923_latest.zip
-          mkdir -p $HOME/Android/cmdline-tools
-          unzip commandlinetools-linux-14742923_latest.zip -d $HOME/Android/cmdline-tools
-          mv $HOME/Android/cmdline-tools/cmdline-tools $HOME/Android/cmdline-tools/latest
-          export ANDROID_HOME=$HOME/Android
+          mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+          unzip commandlinetools-linux-14742923_latest.zip -d $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+          mv $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+          export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
-        env:
-          ANDROID_HOME: $HOME/Android
       - name: Build APK
         env:
-          ANDROID_HOME: $HOME/Android
+          ANDROID_HOME: $HOME/.buildozer/android/platform/android-sdk
+          ANDROID_SDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
         run: |
           [ -f buildozer.spec ] && rm buildozer.spec || true
           buildozer init
@@ -46,3 +45,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ndsn.apk
+          path: bin/*.apk
