@@ -50,6 +50,11 @@ jobs:
             "build-tools;36.1.0" \
             "platforms;android-30"
 
+      - name: Fix sdkmanager path
+        run: |
+          mkdir -p $HOME/android-sdk/tools/bin
+          ln -s $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/android-sdk/tools/bin/sdkmanager
+
       - name: Link SDK for Buildozer
         run: |
           mkdir -p .buildozer/android/platform
