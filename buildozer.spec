@@ -23,7 +23,7 @@ requirements = kivy, cython
 
 [presplash]
 presplash.color = 0x000000
-
+android.accept_sdk_license = True
 [icon]
 
 [buildozer]
