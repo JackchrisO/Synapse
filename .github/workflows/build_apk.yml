@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # Versão mais estável para builds do Buildozer
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
             libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
             autoconf automake libtool libtool-bin pkg-config libffi-dev \
             libssl-dev python3-dev openjdk-17-jdk-headless \
-            zip unzip python3-setuptools
+            zip unzip python3-setuptools libsqlite3-dev tk-dev libgdbm-dev
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -35,7 +35,6 @@ jobs:
       - name: Build APK with Buildozer
         run: |
           export APP_ANDROID_ACCEPT_SDK_LICENSE=1
-          # O parâmetro -v mostra o log detalhado caso ocorra erro de compilação
           yes y | python3 -m buildozer -v android debug
         env:
           PATH: /home/runner/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
