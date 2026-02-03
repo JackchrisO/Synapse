@@ -22,10 +22,13 @@ jobs:
             libgl1-mesa-dev libgles2-mesa-dev
             
       - name: List Android Packages
-        run: sudo $ANDROID_HOME/tools/bin/sdkmanager --list | sed -n '/Available Packages/q;p'
+        run: ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --list
+        
+      - name: Accept licenses and install Build Tools
+        run: |
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-33"
 
-      - name: Accept license 34.0.0-rc3
-        run: echo "y" | sudo $ANDROID_HOME/tools/bin/sdkmanager "build-tools;34.0.0-rc3"
 
       - name: Set up Python
         uses: actions/setup-python@v4
