@@ -14,11 +14,17 @@ android.minapi = 21
 android.api = 30
 android.ndk = 25b
 
-# Permissões necessárias
-android.permissions = INTERNET
 
+android.permissions = INTERNET
+      - name: Accept licenses and install Build Tools
+        run: |
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-33"
+          android.accept_sdk_license = True
+           android.api = 34
+           android.minapi = 21
 [requirements]
-# Não incluir "python3" aqui
+
 requirements = kivy, cython
 
 [presplash]
