@@ -11,36 +11,59 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential git ffmpeg libsdl2-dev libsdl2-image-dev \
-            libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev \
-            libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-            autoconf automake libtool libtool-bin pkg-config libffi-dev \
-            libssl-dev python3-dev openjdk-17-jdk-headless \
-            zip unzip python3-setuptools libsqlite3-dev tk-dev libgdbm-dev
+      # 🔧 Java 11 (OBRIGATÓRIO)
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
 
+      # 🐍 Python 3.10
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install Buildozer and Cython
+      # 📦 Dependências do sistema (mínimas e seguras)
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            zip unzip \
+            autoconf automake libtool pkg-config \
+            libffi-dev libssl-dev \
+            zlib1g-dev \
+            python3-dev \
+            openjdk-11-jdk-headless
+
+      # 🧹 Limpa cache quebrado
+      - name: Clean Buildozer cache
+        run: |
+          rm -rf .buildozer
+
+      # 🧪 Buildozer + Cython compatível
+      - name: Install Buildozer
         run: |
           pip install --user --upgrade "Cython<3.0" buildozer
-          echo "/home/runner/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      # 🚫 Remove Gradle 9 do ambiente
+      - name: Fix Gradle environment
+        run: |
+          unset GRADLE_HOME
+          gradle --version || true
+
+      # 📱 Build APK
       - name: Build APK with Buildozer
         run: |
           export APP_ANDROID_ACCEPT_SDK_LICENSE=1
-          yes y | python3 -m buildozer -v android debug
-        env:
-          PATH: /home/runner/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          buildozer -v android debug --log_level=2
 
+      # 📤 Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ndsn-release
+          name: ndsn-debug-apk
           path: bin/*.apk
