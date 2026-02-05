@@ -2,21 +2,29 @@
 title = Não deixe o sistema nervoso
 package.name = naodeixeosistemanervoso
 package.domain = com.jack.neuroapp
+
 source.dir = .
-version = 0.1
 source.include_exts = py,png,jpg,kv,atlas
 
-# Recomendo testar primeiro apenas com arm64-v8a para ser mais rápido
+version = 0.1
+
+# 🚀 Build mais rápido e estável
 android.archs = arm64-v8a
 
-# Configurações de API atualizadas para 2024/2025
+# 📱 Android moderno (compatível)
 android.minapi = 21
 android.api = 34
+
+# 🧱 NDK compatível com python-for-android
 android.ndk = 25b
+
 android.accept_sdk_license = True
+
+# 🌐 Permissões
 android.permissions = INTERNET
 
-requirements = python3,kivy,cython
+# ⚠️ Ordem e conteúdo importam
+requirements = python3,kivy
 
 [presplash]
 presplash.color = 000000
