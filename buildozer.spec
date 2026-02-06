@@ -46,3 +46,7 @@ jobs:
           buildozer -v android debug
 
       - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ndsn-debug-apk
+          path: bin/*.apk
