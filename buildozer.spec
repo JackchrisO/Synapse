@@ -1,52 +1,28 @@
-name: Build APK
+[app]
+title = Synapse
+package.name = naodeixeosistemanervoso
+package.domain = com.jack.neuroapp
 
-on:
-  push:
-    branches: [ main ]
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
 
-jobs:
-  build:
-    runs-on: ubuntu-22.04
+version = 0.1
 
-    steps:
-      - uses: actions/checkout@v4
+android.archs = arm64-v8a
+android.minapi = 21
+android.api = 34
+android.ndk = 25b
+android.accept_sdk_license = True
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+requirements = python3,kivy,openssl,sqlite3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+orientation = portrait
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential git zip unzip \
-            autoconf automake libtool pkg-config \
-            libffi-dev libssl-dev zlib1g-dev \
-            python3-dev
+android.permissions = INTERNET
 
-      - name: Clean Buildozer cache
-        run: rm -rf .buildozer
+[presplash]
+presplash.color = 000000
 
-      - name: Install Buildozer and Cython
-        run: |
-          pip install --user --upgrade "Cython<3.0" buildozer
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Build APK with Buildozer
-        env:
-          APP_ANDROID_ACCEPT_SDK_LICENSE: 1
-        run: |
-          buildozer -v android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ndsn-debug-apk
-          path: bin/*.apk
+[buildozer]
+log_level = 2
+warn_on_root = 1
