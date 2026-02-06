@@ -1,178 +1,341 @@
-# ===================== main.py (CORRIGIDO E FUNCIONAL ANDROID) =====================
-
-import os
-import json
-import uuid
-import hashlib
-from datetime import datetime, timedelta
-
+import json, os, hashlib, uuid
 from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
+from kivy.core.text import LabelBase
+from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivy.uix.behaviors import ButtonBehavior
+from kivy.graphics import Color, RoundedRectangle, Line
+from kivy.core.window import Window
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.popup import Popup
-from kivy.graphics import Color, RoundedRectangle
-from kivy.uix.spinner import Spinner
-from kivy.uix.togglebutton import ToggleButton
 
-# ===================== ANDROID STORAGE =====================
-try:
-    from android.storage import app_storage_path
-    BASE_DIR = app_storage_path()
-except:
-    BASE_DIR = os.getcwd()
+# ================= CONFIG =================
+Window.clearcolor = (0.96, 0.96, 1, 1)
 
-# ===================== CORES =====================
-FUNDO = (0.96, 0.96, 1, 1)
-PURPLE = (0.6, 0.4, 0.8, 1)
-LIGHT_PURPLE = (0.8, 0.7, 0.9, 1)
-BLACK = (0.15, 0.15, 0.2, 1)
-TEXTO = (0.1, 0.1, 0.2, 1)
+# Correção importante: usar pasta segura do app no Android
+USERS_FILE = "usuarios.json"
+SESSAO = {}
 
-# ===================== ARQUIVOS =====================
-ARQS = {
-    "usuarios": os.path.join(BASE_DIR, "usuarios.json"),
-    "diario": os.path.join(BASE_DIR, "diario.json"),
-    "consultas": os.path.join(BASE_DIR, "consultas.json"),
-    "medicamentos": os.path.join(BASE_DIR, "medicamentos.json"),
-    "crises": os.path.join(BASE_DIR, "crises.json"),
-    "atividades": os.path.join(BASE_DIR, "atividades.json"),
-    "alimentacao": os.path.join(BASE_DIR, "alimentacao.json")
-}
+# ================= FONTE =================
 
-# ===================== UTIL =====================
-def carregar(path):
-    if not os.path.exists(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
 
-def salvar(path, dados):
+# ================= CORES =================
+ROXO = (0.55, 0.45, 0.95, 1)
+ROXO_CLARO = (0.72, 0.65, 1, 1)
+PRETO = (0.12, 0.12, 0.18, 1)
+CINZA = (0.85, 0.85, 0.88, 1)
+
+# ================= UTIL =================
+def get_user_file_path():
+    # caminho seguro no Android e Desktop
+    try:
+        app = App.get_running_app()
+        base = app.user_data_dir
+    except Exception:
+        base = os.getcwd()
+    return os.path.join(base, USERS_FILE)
+
+def carregar_usuarios():
+    path = get_user_file_path()
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def salvar_usuarios(dados):
+    path = get_user_file_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(dados, f, ensure_ascii=False, indent=2)
+        json.dump(dados, f, indent=4, ensure_ascii=False)
 
-# ===================== UI =====================
-class BotaoBonito(ButtonBehavior, Widget):
-    def __init__(self, texto="", on_release=None, **kwargs):
-        super().__init__(**kwargs)
+def hash_senha(senha, salt=None):
+    if not salt:
+        salt = uuid.uuid4().hex
+    return hashlib.sha256((senha + salt).encode()).hexdigest(), salt
+
+# ================= LABEL CENTRAL =================
+def label_central(texto, tamanho=22, cor=PRETO):
+    lbl = Label(
+        text=texto,
+        font_size=tamanho,
+        color=cor,
+        halign="center",
+        valign="middle"
+    )
+    lbl.bind(size=lambda s, *_: setattr(s, "text_size", (s.width, s.height)))
+    return lbl
+
+# ================= BOTÃO PREMIUM =================
+class BotaoPremium(ButtonBehavior, Widget):
+    def __init__(self, texto="", **kw):
+        super().__init__(**kw)
         self.size_hint = (0.9, None)
-        self.height = 45
-        self._callback = on_release or (lambda *_: None)
+        self.height = 56
+        self.radius = 28
 
         with self.canvas.before:
-            Color(*LIGHT_PURPLE)
-            self.bg = RoundedRectangle(pos=self.pos, size=self.size, radius=[22])
+            Color(0, 0, 0, 0.2)
+            self.sombra = RoundedRectangle(radius=[self.radius])
+            self.bg_color = Color(*ROXO)
+            self.bg = RoundedRectangle(radius=[self.radius])
+            Color(1, 1, 1, 0.9)
+            self.borda = Line(width=1.2)
 
-        self.lbl = Label(text=texto, color=TEXTO)
-        self.add_widget(self.lbl)
-
+        self.label = Label(
+            text=texto,
+            color=PRETO,
+            bold=True,
+            font_size=18,
+            halign="center",
+            valign="middle"
+        )
+        self.label.bind(size=lambda s, *_: setattr(s, "text_size", (s.width, s.height)))
+        self.add_widget(self.label)
         self.bind(pos=self.update, size=self.update)
 
-    def update(self, *_):
+    def update(self, *args):
+        self.sombra.pos = (self.x + 3, self.y - 4)
+        self.sombra.size = self.size
         self.bg.pos = self.pos
         self.bg.size = self.size
-        self.lbl.pos = self.pos
-        self.lbl.size = self.size
+        self.borda.rounded_rectangle = (self.x, self.y, self.width, self.height, self.radius)
+        self.label.pos = self.pos
+        self.label.size = self.size
+
+    def on_press(self):
+        self.bg_color.rgba = ROXO_CLARO
 
     def on_release(self):
-        self._callback(self)
+        self.bg_color.rgba = ROXO
 
-# ===================== TELAS =====================
+# ================= INPUT PREMIUM =================
+class InputPremium(Widget):
+    def __init__(self, hint="", password=False, **kw):
+        super().__init__(**kw)
+        self.size_hint = (0.9, None)
+        self.height = 48
+        with self.canvas.before:
+            Color(0, 0, 0, 0.15)
+            self.sombra = RoundedRectangle(radius=[14])
+            Color(1, 1, 1, 1)
+            self.bg = RoundedRectangle(radius=[14])
+            Color(0.7, 0.7, 0.75, 1)
+            self.borda = Line(width=1)
+
+        self.input = TextInput(
+            hint_text=hint,
+            password=password,
+            multiline=False,
+            background_color=(0,0,0,0),
+            foreground_color=PRETO,
+            cursor_color=PRETO,
+            padding=(12,12)
+        )
+
+        self.add_widget(self.input)
+        self.bind(pos=self.update, size=self.update)
+
+    def update(self, *args):
+        self.sombra.pos = (self.x+2, self.y-2)
+        self.sombra.size = self.size
+        self.bg.pos = self.pos
+        self.bg.size = self.size
+        self.borda.rounded_rectangle = (self.x, self.y, self.width, self.height, 14)
+        self.input.pos = self.pos
+        self.input.size = self.size
+
+# ================= RADIO OPÇÃO =================
+class RadioOpcao(ButtonBehavior, Widget):
+    def __init__(self, texto, grupo, **kw):
+        super().__init__(**kw)
+        self.texto = texto
+        self.grupo = grupo
+        self.ativo = False
+        self.size_hint = (0.9, None)
+        self.height = 44
+        self.radius = 22
+        with self.canvas.before:
+            self.bg_color = Color(*CINZA)
+            self.bg = RoundedRectangle(radius=[self.radius])
+
+        self.label = Label(
+            text=texto,
+            color=PRETO,
+            font_size=16,
+            halign="center",
+            valign="middle"
+        )
+        self.label.bind(size=lambda s,*_: setattr(s,"text_size",(s.width,s.height)))
+        self.add_widget(self.label)
+        self.bind(pos=self.update, size=self.update)
+
+    def update(self,*args):
+        self.bg.pos = self.pos
+        self.bg.size = self.size
+        self.label.pos = self.pos
+        self.label.size = self.size
+
+    def on_press(self):
+        for o in self.grupo:
+            o.bg_color.rgba = CINZA
+            o.ativo = False
+        self.bg_color.rgba = ROXO_CLARO
+        self.ativo = True
+
+# ================= TELAS =================
 class Login(Screen):
-    def on_enter(self):
-        self.clear_widgets()
-        box = BoxLayout(orientation="vertical", padding=20, spacing=10)
-        box.add_widget(Label(text="Login"))
-        box.add_widget(BotaoBonito("Entrar", on_release=lambda *_: setattr(self.manager, "current", "principal")))
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        box = BoxLayout(orientation="vertical", padding=30, spacing=15)
         self.add_widget(box)
+
+        box.add_widget(label_central("LOGIN", 32))
+
+        self.user = InputPremium("Usuário")
+        self.pwd = InputPremium("Senha", password=True)
+        self.msg = label_central("", 14, (0.8,0,0,1))
+
+        box.add_widget(self.user)
+        box.add_widget(self.pwd)
+        box.add_widget(self.msg)
+
+        entrar = BotaoPremium("Entrar")
+        entrar.bind(on_release=self.login)
+        box.add_widget(entrar)
+
+        cad = BotaoPremium("Cadastrar")
+        cad.bind(on_release=lambda *_: setattr(self.manager, "current","cadastro"))
+        box.add_widget(cad)
+
+        box.add_widget(Label(
+            text="Não deixe o sistema nervoso",
+            font_size=14,
+            color=(0,0,0,0.5),
+            halign="center"
+        ))
+
+    def login(self,*_):
+        usuarios = carregar_usuarios()
+        u = self.user.input.text.strip()
+        p = self.pwd.input.text
+        if u == "adm" and p == "adm":
+            SESSAO["user"] = u
+            self.manager.current = "principal"
+            return
+        if u not in usuarios:
+            self.msg.text = "Usuário não encontrado"
+            return
+        h,salt = usuarios[u]["senha"], usuarios[u]["salt"]
+        if hash_senha(p,salt)[0]!=h:
+            self.msg.text = "Senha incorreta"
+            return
+        SESSAO["user"]=u
+        self.manager.current="principal"
 
 class Cadastro(Screen):
-    pass
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        scroll = ScrollView(size_hint=(1,1))
+        box = BoxLayout(orientation="vertical", padding=20, spacing=15, size_hint_y=None)
+        box.bind(minimum_height=box.setter("height"))
+        scroll.add_widget(box)
+        self.add_widget(scroll)
+
+        box.add_widget(label_central("CADASTRO",28))
+        self.user = InputPremium("Nome")
+        self.nascimento = InputPremium("Nascimento (DD/MM/AAAA)")
+        self.sexo = InputPremium("Sexo (Opcional)")
+        self.pwd = InputPremium("Senha", password=True)
+        self.conf = InputPremium("Confirmar senha", password=True)
+
+        box.add_widget(self.user)
+        box.add_widget(self.nascimento)
+        box.add_widget(self.sexo)
+        box.add_widget(self.pwd)
+        box.add_widget(self.conf)
+
+        box.add_widget(label_central("Motivo do uso do app:",16))
+        self.opcoes = []
+        for t in ["Epilepsia","Cuidado psicológico","Ambos"]:
+            op = RadioOpcao(t,self.opcoes)
+            self.opcoes.append(op)
+            box.add_widget(op)
+
+        self.msg = label_central("",14,(0.8,0,0,1))
+        box.add_widget(self.msg)
+
+        salvar = BotaoPremium("Salvar")
+        salvar.bind(on_release=self.salvar)
+        box.add_widget(salvar)
+
+        voltar = BotaoPremium("Voltar")
+        voltar.bind(on_release=lambda *_: setattr(self.manager,"current","login"))
+        box.add_widget(voltar)
+
+        box.add_widget(Label(
+            text="Não deixe o sistema nervoso",
+            font_size=14,
+            color=(0,0,0,0.5),
+            halign="center"
+        ))
+
+    def salvar(self,*_):
+        if self.pwd.input.text != self.conf.input.text:
+            self.msg.text="As senhas não coincidem"
+            return
+        motivo = next((o.texto for o in self.opcoes if o.ativo),None)
+        if not motivo:
+            self.msg.text="Selecione um motivo"
+            return
+        usuarios = carregar_usuarios()
+        u = self.user.input.text.strip()
+        if u in usuarios:
+            self.msg.text="Usuário já existe"
+            return
+        h,salt = hash_senha(self.pwd.input.text)
+        usuarios[u]={
+            "nome":u,
+            "nascimento":self.nascimento.input.text,
+            "sexo":self.sexo.input.text,
+            "senha":h,
+            "salt":salt,
+            "motivo":motivo
+        }
+        salvar_usuarios(usuarios)
+        self.manager.current="login"
 
 class Principal(Screen):
-    def on_enter(self):
-        self.clear_widgets()
-        box = BoxLayout(orientation="vertical", padding=20, spacing=10)
-        box.add_widget(Label(text="Menu Principal"))
-        box.add_widget(BotaoBonito("Diário", on_release=lambda *_: setattr(self.manager, "current", "diario")))
-        box.add_widget(BotaoBonito("Atividades", on_release=lambda *_: setattr(self.manager, "current", "atividades")))
-        box.add_widget(BotaoBonito("Análise", on_release=lambda *_: setattr(self.manager, "current", "analise")))
-        self.add_widget(box)
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        scroll = ScrollView(size_hint=(1,1))
+        box = BoxLayout(orientation="vertical", padding=20, spacing=15, size_hint_y=None)
+        box.bind(minimum_height=box.setter("height"))
+        scroll.add_widget(box)
+        self.add_widget(scroll)
 
-class Diario(Screen):
-    def on_enter(self):
-        self.clear_widgets()
-        box = BoxLayout(orientation="vertical", padding=20, spacing=10)
-        self.txt = TextInput(multiline=True)
-        box.add_widget(self.txt)
-        box.add_widget(BotaoBonito("Salvar", on_release=self.salvar))
-        box.add_widget(BotaoBonito("Voltar", on_release=lambda *_: setattr(self.manager, "current", "principal")))
-        self.add_widget(box)
+        box.add_widget(label_central("MENU PRINCIPAL",28))
+        box.add_widget(Label(
+            text="Não deixe o sistema nervoso",
+            font_size=14,
+            color=(0,0,0,0.5),
+            halign="center"
+        ))
 
-    def salvar(self, *_):
-        dados = carregar(ARQS["diario"])
-        dados.append({"data": datetime.now().strftime("%d/%m/%Y"), "texto": self.txt.text})
-        salvar(ARQS["diario"], dados)
-        self.txt.text = ""
+        botoes = ["Registrar Crises","Diário","Alimentação","Atividades Físicas","Consultas","Medicamentos","Análise"]
+        for txt in botoes:
+            box.add_widget(BotaoPremium(txt))
+            box.add_widget(Widget(size_hint_y=None,height=8))
 
-class Atividades(Screen):
-    def on_enter(self):
-        self.clear_widgets()
-        box = BoxLayout(orientation="vertical", padding=20, spacing=10)
-        box.add_widget(Label(text="Atividades"))
-        box.add_widget(BotaoBonito("Registrar", on_release=lambda *_: setattr(self.manager, "current", "registrar_atividade")))
-        box.add_widget(BotaoBonito("Voltar", on_release=lambda *_: setattr(self.manager, "current", "principal")))
-        self.add_widget(box)
-
-class RegistrarAtividade(Screen):
-    def on_enter(self):
-        self.clear_widgets()
-        box = BoxLayout(orientation="vertical", padding=20, spacing=10)
-        self.nome = TextInput(hint_text="Nome")
-        box.add_widget(self.nome)
-        box.add_widget(BotaoBonito("Salvar", on_release=self.salvar))
-        box.add_widget(BotaoBonito("Voltar", on_release=lambda *_: setattr(self.manager, "current", "atividades")))
-        self.add_widget(box)
-
-    def salvar(self, *_):
-        dados = carregar(ARQS["atividades"])
-        dados.append({"nome": self.nome.text, "data": datetime.now().strftime("%d/%m/%Y")})
-        salvar(ARQS["atividades"], dados)
-        self.nome.text = ""
-
-class TelaAnalise(Screen):
-    def on_enter(self):
-        self.clear_widgets()
-        box = BoxLayout(orientation="vertical", padding=20, spacing=10)
-        box.add_widget(Label(text="Análise últimos 7 dias"))
-
-        hoje = datetime.now()
-        for i in range(7):
-            dia = (hoje - timedelta(days=i)).strftime("%d/%m/%Y")
-            crises = len([c for c in carregar(ARQS["crises"]) if c.get("data") == dia])
-            atividades = len([a for a in carregar(ARQS["atividades"]) if a.get("data") == dia])
-            box.add_widget(Label(text=f"{dia} | Crises: {crises} | Atividades: {atividades}"))
-
-        box.add_widget(BotaoBonito("Voltar", on_release=lambda *_: setattr(self.manager, "current", "principal")))
-        self.add_widget(box)
-
-# ===================== APP =====================
-class MeuApp(App):
+# ================= APP =================
+class AppMain(App):
     def build(self):
-        sm = ScreenManager(transition=FadeTransition())
+        sm = ScreenManager()
         sm.add_widget(Login(name="login"))
         sm.add_widget(Cadastro(name="cadastro"))
         sm.add_widget(Principal(name="principal"))
-        sm.add_widget(Diario(name="diario"))
-        sm.add_widget(Atividades(name="atividades"))
-        sm.add_widget(RegistrarAtividade(name="registrar_atividade"))
-        sm.add_widget(TelaAnalise(name="analise"))
-        sm.current = "login"
         return sm
 
 if __name__ == "__main__":
-    MeuApp().run()
+    AppMain().run()
