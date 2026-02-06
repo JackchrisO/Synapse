@@ -1,335 +1,411 @@
-import json, os, hashlib, uuid
-from kivy.app import App
-from kivy.core.text import LabelBase
-from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.widget import Widget
-from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, RoundedRectangle, Line
-from kivy.core.window import Window
-from kivy.uix.scrollview import ScrollView
+# main.py
+import json, os, uuid, hashlib, datetime, re
+from kivy.metrics import dp
 from kivy.utils import platform
+from kivy.core.window import Window
 
-# ================= CONFIG =================
-Window.size = (360, 640)
-Window.clearcolor = (0.96, 0.96, 1, 1)
-USERS_FILE = "usuarios.json"
+from kivymd.app import MDApp
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.button import MDRaisedButton, MDFlatButton
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.label import MDLabel
+from kivymd.uix.textfield import MDTextField
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.list import OneLineListItem
+from kivymd.uix.picker import MDDatePicker, MDTimePicker
+from kivymd.uix.menu import MDDropdownMenu
+from kivymd.uix.snackbar import Snackbar
+from kivymd.uix.card import MDCard
+from kivymd.uix.toolbar import MDTopAppBar
+from kivymd.uix.scrollview import MDScrollView
+from kivymd.uix.selectioncontrol import MDCheckbox
+
+# =========================
+# CONFIG
+# =========================
+ROXO = " #8a2be2"
+LILAS = "#b39ddb"
+AZUL = "#81d4fa"
+
+USERS_FILE = "data/usuarios.json"
+CRISES_FILE = "data/crises.json"
+DIARIO_FILE = "data/diario.json"
+MEDS_FILE = "data/medicamentos.json"
+CONSULTAS_FILE = "data/consultas.json"
+ATIVIDADES_FILE = "data/atividades.json"
+ALIMENTACAO_FILE = "data/alimentacao.json"
+REGISTROS_FILE = "data/registros.json"
+
 SESSAO = {}
 
-# ================= CORES =================
-ROXO = (0.55, 0.45, 0.95, 1)
-ROXO_CLARO = (0.72, 0.65, 1, 1)
-PRETO = (0.12, 0.12, 0.18, 1)
-CINZA = (0.85, 0.85, 0.88, 1)
+# =========================
+# UTIL
+# =========================
+def ensure_data_dir():
+    os.makedirs("data", exist_ok=True)
 
-# ================= ANDROID PATH =================
-def caminho_app(arquivo):
-    if platform == "android":
-        from android.storage import app_storage_path
-        return os.path.join(app_storage_path(), arquivo)
-    return arquivo
+def load_json(path):
+    ensure_data_dir()
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({}, f, indent=4, ensure_ascii=False)
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-# ================= UTIL =================
-def carregar_usuarios():
-    try:
-        path = caminho_app(USERS_FILE)
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-    except Exception:
-        pass
-    return {}
-
-def salvar_usuarios(dados):
-    path = caminho_app(USERS_FILE)
+def save_json(path, data):
+    ensure_data_dir()
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(dados, f, indent=4, ensure_ascii=False)
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 def hash_senha(senha, salt=None):
     if not salt:
         salt = uuid.uuid4().hex
     return hashlib.sha256((senha + salt).encode()).hexdigest(), salt
 
-# ================= LABEL CENTRAL =================
-def label_central(texto, tamanho=22, cor=PRETO):
-    lbl = Label(text=texto, font_size=tamanho, color=cor,
-                halign="center", valign="middle")
-    lbl.bind(size=lambda s, *_: setattr(s, "text_size", (s.width, s.height)))
-    return lbl
+def alerta_palavras(texto):
+    palavras = [
+        "suicidio","morte","morrer","matar","tirar a vida","acabar com tudo",
+        "desistir","sem sentido","inutil","foda-se","não aguento","cortar",
+        "ferir","machucar","ódio","raiva","desespero","sofrimento","fim",
+        "vontade de morrer","não quero viver","acabou","nada importa",
+        "perder a vida","sofrer","desamparo","sem saída","angustia","desolado",
+        "desesperado","sem esperança"
+    ]
+    texto = texto.lower()
+    return any(p in texto for p in palavras)
 
-# ================= BOTÃO PREMIUM =================
-class BotaoPremium(ButtonBehavior, Widget):
-    def __init__(self, texto="", **kw):
-        super().__init__(**kw)
-        self.size_hint = (0.9, None)
-        self.height = 56
-        self.radius = 28
+# =========================
+# APP
+# =========================
+class SynapseApp(MDApp):
 
-        with self.canvas.before:
-            Color(0, 0, 0, 0.2)
-            self.sombra = RoundedRectangle(radius=[self.radius])
-            self.bg_color = Color(*ROXO)
-            self.bg = RoundedRectangle(radius=[self.radius])
-            Color(1, 1, 1, 0.9)
-            self.borda = Line(width=1.2)
+    def build(self):
+        self.theme_cls.primary_palette = "DeepPurple"
+        self.theme_cls.theme_style = "Light"
+        self.load_all()
 
-        self.label = Label(text=texto, color=PRETO, bold=True,
-                           font_size=18, halign="center", valign="middle")
-        self.label.bind(size=lambda s, *_: setattr(s, "text_size", (s.width, s.height)))
-        self.add_widget(self.label)
-        self.bind(pos=self.update, size=self.update)
+        return Builder.load_file("synapse.kv")
 
-    def update(self, *args):
-        self.sombra.pos = (self.x + 3, self.y - 4)
-        self.sombra.size = self.size
-        self.bg.pos = self.pos
-        self.bg.size = self.size
-        self.borda.rounded_rectangle = (self.x, self.y, self.width, self.height, self.radius)
-        self.label.pos = self.pos
-        self.label.size = self.size
+    def load_all(self):
+        self.usuarios = load_json(USERS_FILE)
+        self.crises = load_json(CRISES_FILE)
+        self.diario = load_json(DIARIO_FILE)
+        self.meds = load_json(MEDS_FILE)
+        self.consultas = load_json(CONSULTAS_FILE)
+        self.atividades = load_json(ATIVIDADES_FILE)
+        self.alimentacao = load_json(ALIMENTACAO_FILE)
+        self.registros = load_json(REGISTROS_FILE)
 
-    def on_press(self):
-        self.bg_color.rgba = ROXO_CLARO
+    def salvar_todos(self):
+        save_json(USERS_FILE, self.usuarios)
+        save_json(CRISES_FILE, self.crises)
+        save_json(DIARIO_FILE, self.diario)
+        save_json(MEDS_FILE, self.meds)
+        save_json(CONSULTAS_FILE, self.consultas)
+        save_json(ATIVIDADES_FILE, self.atividades)
+        save_json(ALIMENTACAO_FILE, self.alimentacao)
+        save_json(REGISTROS_FILE, self.registros)
 
-    def on_release(self):
-        self.bg_color.rgba = ROXO
-
-# ================= INPUT PREMIUM =================
-class InputPremium(Widget):
-    def __init__(self, hint="", password=False, **kw):
-        super().__init__(**kw)
-        self.size_hint = (0.9, None)
-        self.height = 48
-
-        with self.canvas.before:
-            Color(0, 0, 0, 0.15)
-            self.sombra = RoundedRectangle(radius=[14])
-            Color(1, 1, 1, 1)
-            self.bg = RoundedRectangle(radius=[14])
-            Color(0.7, 0.7, 0.75, 1)
-            self.borda = Line(width=1)
-
-        self.input = TextInput(
-            hint_text=hint,
-            password=password,
-            multiline=False,
-            background_color=(0, 0, 0, 0),
-            foreground_color=PRETO,
-            cursor_color=PRETO,
-            padding=(12, 12)
-        )
-
-        self.add_widget(self.input)
-        self.bind(pos=self.update, size=self.update)
-
-    def update(self, *args):
-        self.sombra.pos = (self.x + 2, self.y - 2)
-        self.sombra.size = self.size
-        self.bg.pos = self.pos
-        self.bg.size = self.size
-        self.borda.rounded_rectangle = (self.x, self.y, self.width, self.height, 14)
-        self.input.pos = self.pos
-        self.input.size = self.size
-
-# ================= RADIO OPÇÃO =================
-class RadioOpcao(ButtonBehavior, Widget):
-    def __init__(self, texto, grupo, **kw):
-        super().__init__(**kw)
-        self.texto = texto
-        self.grupo = grupo
-        self.ativo = False
-        self.size_hint = (0.9, None)
-        self.height = 44
-        self.radius = 22
-        with self.canvas.before:
-            self.bg_color = Color(*CINZA)
-            self.bg = RoundedRectangle(radius=[self.radius])
-
-        self.label = Label(
-            text=texto,
-            color=PRETO,
-            font_size=16,
-            halign="center",
-            valign="middle"
-        )
-        self.label.bind(size=lambda s, *_: setattr(s, "text_size", (s.width, s.height)))
-        self.add_widget(self.label)
-        self.bind(pos=self.update, size=self.update)
-
-    def update(self, *args):
-        self.bg.pos = self.pos
-        self.bg.size = self.size
-        self.label.pos = self.pos
-        self.label.size = self.size
-
-    def on_press(self):
-        for o in self.grupo:
-            o.bg_color.rgba = CINZA
-            o.ativo = False
-        self.bg_color.rgba = ROXO_CLARO
-        self.ativo = True
-
-# ================= TELAS =================
-class Login(Screen):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        box = BoxLayout(orientation="vertical", padding=30, spacing=15)
-        self.add_widget(box)
-
-        box.add_widget(label_central("LOGIN", 32))
-
-        self.user = InputPremium("Usuário")
-        self.pwd = InputPremium("Senha", password=True)
-        self.msg = label_central("", 14, (0.8, 0, 0, 1))
-
-        box.add_widget(self.user)
-        box.add_widget(self.pwd)
-        box.add_widget(self.msg)
-
-        entrar = BotaoPremium("Entrar")
-        entrar.bind(on_release=self.login)
-        box.add_widget(entrar)
-
-        cad = BotaoPremium("Cadastrar")
-        cad.bind(on_release=lambda *_: setattr(self.manager, "current", "cadastro"))
-        box.add_widget(cad)
-
-        box.add_widget(Label(
-            text="Não deixe o sistema nervoso",
-            font_size=14,
-            color=(0, 0, 0, 0.5),
-            halign="center"
-        ))
-
-    def login(self, *_):
-        usuarios = carregar_usuarios()
-        u = self.user.input.text.strip()
-        p = self.pwd.input.text
+    # -------------------
+    # LOGIN
+    # -------------------
+    def login(self):
+        u = self.root.ids.login_user.text.strip()
+        p = self.root.ids.login_pwd.text.strip()
 
         if u == "adm" and p == "adm":
-            SESSAO["user"] = u
-            self.manager.current = "principal"
+            SESSAO["user"] = "adm"
+            self.root.ids.screen_manager.current = "admin"
             return
 
-        if u not in usuarios:
-            self.msg.text = "Usuário não encontrado"
+        if u not in self.usuarios:
+            self.root.ids.login_msg.text = "Usuário não encontrado"
             return
 
-        h, salt = usuarios[u]["senha"], usuarios[u]["salt"]
+        h, salt = self.usuarios[u]["senha"], self.usuarios[u]["salt"]
         if hash_senha(p, salt)[0] != h:
-            self.msg.text = "Senha incorreta"
+            self.root.ids.login_msg.text = "Senha incorreta"
             return
 
         SESSAO["user"] = u
-        self.manager.current = "principal"
+        self.root.ids.login_msg.text = ""
+        self.root.ids.screen_manager.current = "principal"
+        self.atualizar_menu()
 
-class Cadastro(Screen):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        scroll = ScrollView(size_hint=(1, 1))
-        box = BoxLayout(orientation="vertical", padding=20, spacing=15, size_hint_y=None)
-        box.bind(minimum_height=box.setter("height"))
-        scroll.add_widget(box)
-        self.add_widget(scroll)
+    # -------------------
+    # CADASTRO
+    # -------------------
+    def cadastrar(self):
+        nome = self.root.ids.cad_nome.text.strip()
+        idade = self.root.ids.cad_idade.text.strip()
+        sexo = self.root.ids.cad_sexo.text.strip()
+        motivo = self.root.ids.cad_motivo.text.strip()
 
-        box.add_widget(label_central("CADASTRO", 28))
-        self.user = InputPremium("Nome")
-        self.nascimento = InputPremium("Nascimento (DD/MM/AAAA)")
-        self.sexo = InputPremium("Sexo (Opcional)")
-        self.pwd = InputPremium("Senha", password=True)
-        self.conf = InputPremium("Confirmar senha", password=True)
-
-        box.add_widget(self.user)
-        box.add_widget(self.nascimento)
-        box.add_widget(self.sexo)
-        box.add_widget(self.pwd)
-        box.add_widget(self.conf)
-
-        box.add_widget(label_central("Motivo do uso do app:", 16))
-        self.opcoes = []
-        for t in ["Epilepsia", "Cuidado psicológico", "Ambos"]:
-            op = RadioOpcao(t, self.opcoes)
-            self.opcoes.append(op)
-            box.add_widget(op)
-
-        self.msg = label_central("", 14, (0.8, 0, 0, 1))
-        box.add_widget(self.msg)
-
-        salvar = BotaoPremium("Salvar")
-        salvar.bind(on_release=self.salvar)
-        box.add_widget(salvar)
-
-        voltar = BotaoPremium("Voltar")
-        voltar.bind(on_release=lambda *_: setattr(self.manager, "current", "login"))
-        box.add_widget(voltar)
-
-        box.add_widget(Label(
-            text="Não deixe o sistema nervoso",
-            font_size=14,
-            color=(0, 0, 0, 0.5),
-            halign="center"
-        ))
-
-    def salvar(self, *_):
-        if self.pwd.input.text != self.conf.input.text:
-            self.msg.text = "As senhas não coincidem"
+        if not nome or not idade or not motivo:
+            self.root.ids.cad_msg.text = "Preencha todos os campos obrigatórios"
             return
 
-        motivo = next((o.texto for o in self.opcoes if o.ativo), None)
-        if not motivo:
-            self.msg.text = "Selecione um motivo"
+        if nome in self.usuarios:
+            self.root.ids.cad_msg.text = "Usuário já existe"
             return
 
-        usuarios = carregar_usuarios()
-        u = self.user.input.text.strip()
-        if u in usuarios:
-            self.msg.text = "Usuário já existe"
-            return
-
-        h, salt = hash_senha(self.pwd.input.text)
-        usuarios[u] = {
-            "nome": u,
-            "nascimento": self.nascimento.input.text,
-            "sexo": self.sexo.input.text,
+        h, salt = hash_senha(self.root.ids.cad_pwd.text)
+        self.usuarios[nome] = {
+            "nome": nome,
+            "idade": idade,
+            "sexo": sexo,
             "senha": h,
             "salt": salt,
             "motivo": motivo
         }
-        salvar_usuarios(usuarios)
-        self.manager.current = "login"
+        self.salvar_todos()
+        self.root.ids.screen_manager.current = "login"
+        self.root.ids.cad_msg.text = ""
 
-class Principal(Screen):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        scroll = ScrollView(size_hint=(1, 1))
-        box = BoxLayout(orientation="vertical", padding=20, spacing=15, size_hint_y=None)
-        box.bind(minimum_height=box.setter("height"))
-        scroll.add_widget(box)
-        self.add_widget(scroll)
+    # -------------------
+    # MENU PRINCIPAL
+    # -------------------
+    def atualizar_menu(self):
+        user = SESSAO.get("user")
+        if not user:
+            return
+        motivo = self.usuarios[user]["motivo"]
 
-        box.add_widget(label_central("MENU PRINCIPAL", 28))
-        box.add_widget(Label(
-            text="Não deixe o sistema nervoso",
-            font_size=14,
-            color=(0, 0, 0, 0.5),
-            halign="center"
-        ))
+        # Se for só psicologico, remove registrar crises
+        self.root.ids.btn_crises.opacity = 1 if motivo in ["Epilepsia", "Ambos"] else 0
+        self.root.ids.btn_crises.disabled = False if motivo in ["Epilepsia", "Ambos"] else True
 
-        botoes = ["Registrar Crises", "Diário", "Alimentação", "Atividades Físicas", "Consultas", "Medicamentos", "Análise"]
-        for txt in botoes:
-            box.add_widget(BotaoPremium(txt))
-            box.add_widget(Widget(size_hint_y=None, height=8))
+    # -------------------
+    # CRISES
+    # -------------------
+    def abrir_crises(self):
+        self.root.ids.screen_manager.current = "crises"
+        self.root.ids.crises_box.clear_widgets()
 
-# ================= APP =================
-class AppMain(App):
-    def build(self):
-        sm = ScreenManager()
-        sm.add_widget(Login(name="login"))
-        sm.add_widget(Cadastro(name="cadastro"))
-        sm.add_widget(Principal(name="principal"))
-        return sm
+        CRISES = {
+            "Crise Focal": [
+                ("Sensorial", "Formigamento, cheiros irreais"),
+                ("Motora", "Movimentos involuntários"),
+                ("Autonômica", "Náusea, sudorese"),
+                ("Psíquica", "Medo, déjà vu, jamais vu")
+            ],
+            "Crise Focal com Alteração da Consciência": [
+                ("Automatismos", "Movimentos repetitivos"),
+                ("Confusão", "Desorientação")
+            ],
+            "Crise Generalizada": [
+                ("Tônico-clônica", "Rigidez e abalos"),
+                ("Ausência", "Desligamento breve"),
+                ("Mioclônica", "Contrações rápidas"),
+                ("Atônica", "Perda de força")
+            ],
+            "Crise Gelástica": [
+                ("Riso involuntário", "Riso sem motivo")
+            ],
+            "Crise Reflexa": [
+                ("Fotossensível", "Luz"),
+                ("Auditiva", "Som")
+            ]
+        }
 
-if __name__ == "__main__":
-    AppMain().run()
+        for crise, subs in CRISES.items():
+            btn = MDRaisedButton(text=crise, md_bg_color=(0.72,0.65,1,1))
+            btn.bind(on_release=lambda inst, c=crise, s=subs: self.abrir_subcrises(c, s))
+            self.root.ids.crises_box.add_widget(btn)
+
+    def abrir_subcrises(self, crise, subs):
+        self.root.ids.screen_manager.current = "subcrises"
+        self.root.ids.subcrises_title.text = crise
+        self.root.ids.subcrises_box.clear_widgets()
+
+        for nome, desc in subs:
+            btn = MDRaisedButton(text=nome, md_bg_color=(0.81,0.88,1,1))
+            btn.bind(on_release=lambda inst, n=nome: self.registrar_crise(crise, n))
+            self.root.ids.subcrises_box.add_widget(btn)
+
+    def registrar_crise(self, crise, sub):
+        user = SESSAO.get("user")
+        if not user: return
+
+        registro = {
+            "data": str(datetime.date.today()),
+            "hora": str(datetime.datetime.now().time())[:8],
+            "crise": crise,
+            "subcrise": sub
+        }
+        self.registros.setdefault(user, {}).setdefault("crises", []).append(registro)
+        self.salvar_todos()
+        Snackbar(text="Crise registrada!").open()
+
+    def ver_crises_registradas(self):
+        user = SESSAO.get("user")
+        if not user: return
+        self.root.ids.screen_manager.current = "crises_reg"
+        self.root.ids.crises_reg_box.clear_widgets()
+
+        registros = self.registros.get(user, {}).get("crises", [])
+        for r in registros:
+            self.root.ids.crises_reg_box.add_widget(
+                OneLineListItem(text=f"{r['data']} {r['hora']} - {r['crise']} ({r['subcrise']})")
+            )
+
+    # -------------------
+    # DIARIO
+    # -------------------
+    def salvar_diario(self):
+        user = SESSAO.get("user")
+        if not user: return
+
+        texto = self.root.ids.diario_text.text.strip()
+        humor = self.root.ids.diario_humor.text.strip()
+
+        if humor not in ["Bom","Neutro","Ruim"]:
+            Snackbar(text="Marque o humor: Bom, Neutro ou Ruim").open()
+            return
+
+        if alerta_palavras(texto):
+            self.dialog_alerta()
+
+        registro = {
+            "data": str(datetime.date.today()),
+            "humor": humor,
+            "texto": texto
+        }
+        self.registros.setdefault(user, {}).setdefault("diario", []).append(registro)
+        self.salvar_todos()
+        Snackbar(text="Diário salvo!").open()
+
+    def dialog_alerta(self):
+        self.dialog = MDDialog(
+            title="Olá, você não parece tão bem hoje...",
+            text="Você merece cuidado. Se estiver em risco, ligue para o número de emergência.\n\n📞 188 (CVV Brasil)\n📞 192 / 193",
+            buttons=[
+                MDFlatButton(text="OK", on_release=lambda x: self.dialog.dismiss())
+            ]
+        )
+        self.dialog.open()
+
+    # -------------------
+    # MEDICAMENTOS
+    # -------------------
+    def abrir_meds(self):
+        self.root.ids.screen_manager.current = "meds"
+        self.root.ids.meds_box.clear_widgets()
+        user = SESSAO.get("user")
+        registros = self.registros.get(user, {}).get("medicamentos", [])
+        for m in registros:
+            self.root.ids.meds_box.add_widget(
+                OneLineListItem(text=f"{m['nome']} - {m['mg']}mg - {m['freq']}x/dia - compra: {m['compra']}")
+            )
+
+    def registrar_med(self):
+        user = SESSAO.get("user")
+        if not user: return
+
+        nome = self.root.ids.med_nome.text.strip()
+        mg = self.root.ids.med_mg.text.strip()
+        freq = self.root.ids.med_freq.text.strip()
+        compra = self.root.ids.med_compra.text.strip()
+
+        registro = {"nome": nome, "mg": mg, "freq": freq, "compra": compra}
+        self.registros.setdefault(user, {}).setdefault("medicamentos", []).append(registro)
+        self.salvar_todos()
+        Snackbar(text="Medicamento registrado!").open()
+
+    # -------------------
+    # CONSULTAS
+    # -------------------
+    def registrar_consulta(self):
+        user = SESSAO.get("user")
+        if not user: return
+
+        nome = self.root.ids.cons_nome.text.strip()
+        esp = self.root.ids.cons_esp.text.strip()
+        data = self.root.ids.cons_data.text.strip()
+        hora = self.root.ids.cons_hora.text.strip()
+
+        registro = {"nome": nome, "esp": esp, "data": data, "hora": hora}
+        self.registros.setdefault(user, {}).setdefault("consultas", []).append(registro)
+        self.salvar_todos()
+        Snackbar(text="Consulta registrada!").open()
+
+    # -------------------
+    # ATIVIDADES
+    # -------------------
+    def registrar_atividade(self):
+        user = SESSAO.get("user")
+        if not user: return
+        nome = self.root.ids.ativ_nome.text.strip()
+        tempo = self.root.ids.ativ_tempo.text.strip()
+        intensidade = self.root.ids.ativ_int.text.strip()
+        registro = {"nome": nome, "tempo": tempo, "intensidade": intensidade}
+        self.registros.setdefault(user, {}).setdefault("atividades", []).append(registro)
+        self.salvar_todos()
+        Snackbar(text="Atividade registrada!").open()
+
+    # -------------------
+    # ALIMENTAÇÃO
+    # -------------------
+    def abrir_alimentacao(self):
+        self.root.ids.screen_manager.current = "alimentacao"
+        self.root.ids.alim_box.clear_widgets()
+
+        TIPOS = {
+            "Frutas": ["Maçã", "Banana", "Laranja", "Abacate", "Uva", "Melancia", "Pera", "Manga", "Kiwi", "Morango"],
+            "Legumes": ["Cenoura", "Batata", "Abóbora", "Brócolis", "Couve", "Espinafre", "Pepino", "Tomate", "Beterraba", "Rabanete"],
+            "Proteínas": ["Frango", "Carne", "Peixe", "Ovo", "Tofu", "Feijão", "Grão-de-bico", "Lentilha", "Queijo", "Iogurte"],
+            "Carboidratos": ["Arroz", "Macarrão", "Pão", "Batata", "Aveia", "Quinoa", "Milho", "Cuscuz", "Mandioca", "Pão integral"],
+            "Laticínios": ["Leite", "Queijo", "Iogurte", "Manteiga", "Requeijão", "Creme de leite", "Kefir", "Ricota", "Coalhada", "Sorvete"],
+            "Gorduras": ["Azeite", "Abacate", "Castanhas", "Manteiga", "Óleo de coco", "Margarina", "Sementes", "Nozes", "Amendoim", "Avelã"],
+            "Doces": ["Chocolate", "Bolo", "Sorvete", "Balas", "Pudim", "Cookie", "Doce de leite", "Brigadeiro", "Guloseimas", "Churros"],
+            "Bebidas": ["Água", "Suco", "Refrigerante", "Café", "Chá", "Leite", "Smoothie", "Vitamina", "Energético", "Água de coco"],
+            "Lanches": ["Sanduíche", "Pizza", "Salgadinho", "Pipoca", "Torrada", "Wrap", "Hambúrguer", "Hot dog", "Sushi", "Tapioca"],
+            "Sopas": ["Sopa de legumes", "Caldo verde", "Sopa de frango", "Sopa de carne", "Canja", "Creme de milho", "Sopa de abóbora", "Sopa de lentilha", "Sopa de feijão", "Sopa de batata"]
+        }
+
+        for tipo, subs in TIPOS.items():
+            btn = MDRaisedButton(text=tipo, md_bg_color=(0.72,0.65,1,1))
+            btn.bind(on_release=lambda inst, t=tipo, s=subs: self.abrir_sub_alim(t, s))
+            self.root.ids.alim_box.add_widget(btn)
+
+    def abrir_sub_alim(self, tipo, subs):
+        self.root.ids.screen_manager.current = "sub_alim"
+        self.root.ids.sub_alim_title.text = tipo
+        self.root.ids.sub_alim_box.clear_widgets()
+
+        for s in subs:
+            btn = MDRaisedButton(text=s, md_bg_color=(0.81,0.88,1,1))
+            btn.bind(on_release=lambda inst, sub=s: self.registrar_alim(tipo, sub))
+            self.root.ids.sub_alim_box.add_widget(btn)
+
+    def registrar_alim(self, tipo, sub):
+        user = SESSAO.get("user")
+        registro = {"data": str(datetime.date.today()), "tipo": tipo, "sub": sub}
+        self.registros.setdefault(user, {}).setdefault("alimentacao", []).append(registro)
+        self.salvar_todos()
+        Snackbar(text="Alimentação registrada!").open()
+
+    # -------------------
+    # ANALISE
+    # -------------------
+    def abrir_analise(self, dias=7):
+        user = SESSAO.get("user")
+        self.root.ids.screen_manager.current = "analise"
+        self.root.ids.analise_box.clear_widgets()
+
+        data_fim = datetime.date.today()
+        data_ini = data_fim - datetime.timedelta(days=dias)
+
+        # mostra resumo simples
+        registros = self.registros.get(user, {})
+        diario = registros.get("diario", [])
+        crises = registros.get("crises", [])
+        meds = registros.get("medicamentos", [])
+
+        resumo = f"Resumo últimos {dias} dias:\n"
+        resumo += f"Diário: {len([d for d in diario if data_ini <= datetime.date.fromisoformat(d['data']) <= data_fim])}\n"
+        resumo += f"Crises: {len([c for c in crises if data_ini <= datetime.date.fromisoformat(c['data']) <= data_fim])}\n"
+        resumo += f"Medicamentos: {len(meds)}\n"
+
+        self.root.ids.analise_box.add_widget(MDLabel(text=resumo, theme_text_color="Primary"))
+
