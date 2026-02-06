@@ -1,5 +1,8 @@
-#:import MDFillRoundFlatButton kivymd.uix.button.MDFillRoundFlatButton
+#:import MDRaisedButton kivymd.uix.button.MDRaisedButton
+#:import MDFlatButton kivymd.uix.button.MDFlatButton
 #:import MDTextField kivymd.uix.textfield.MDTextField
+#:import MDLabel kivymd.uix.label.MDLabel
+#:import MDTopAppBar kivymd.uix.toolbar.MDTopAppBar
 
 ScreenManager:
     id: screen_manager
@@ -15,7 +18,6 @@ ScreenManager:
                 text: "SYNAPSE"
                 font_style: "H3"
                 halign: "center"
-                theme_text_color: "Primary"
 
             MDLabel:
                 text: "Não deixe o sistema nervoso"
@@ -118,12 +120,7 @@ ScreenManager:
 
             MDTopAppBar:
                 title: "Menu Principal"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "login"]]
-
-            MDLabel:
-                text: "Olá, bem-vindo!"
-                halign: "center"
-                theme_text_color: "Primary"
+                left_action_items: [["logout", lambda x: app.sair()]]
 
             MDRaisedButton:
                 id: btn_crises
@@ -182,6 +179,7 @@ ScreenManager:
 
             MDRaisedButton:
                 text: "Crises registradas"
+                md_bg_color: (0.72,0.65,1,1)
                 on_release: app.ver_crises_registradas()
 
     MDScreen:
@@ -422,3 +420,23 @@ ScreenManager:
                     orientation: "vertical"
                     size_hint_y: None
                     height: self.minimum_height
+
+    MDScreen:
+        name: "admin"
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(20)
+            spacing: dp(15)
+
+            MDTopAppBar:
+                title: "Admin"
+                left_action_items: [["arrow-left", lambda x: app.sair()]]
+
+            MDRaisedButton:
+                text: "Ver usuários (sem diário)"
+                md_bg_color: (0.72,0.65,1,1)
+                on_release: app.ver_dados()
+
+            MDScrollView:
+                MDList:
+                    id: admin_box
