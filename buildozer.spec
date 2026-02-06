@@ -1,6 +1,6 @@
 [app]
-title = Não deixe o sistema nervoso
-package.name = naodeixeosistemanervoso
+title = Synapse
+package.name = synapse
 package.domain = com.jack.neuroapp
 
 source.dir = .
@@ -8,12 +8,12 @@ source.include_exts = py,png,jpg,kv,atlas
 
 version = 0.1
 
-# 🚀 Build mais rápido e estável
+
 android.archs = arm64-v8a
 
-# 📱 Android moderno (compatível)
+
 android.minapi = 21
-android.api = 34
+android.api = 33
 
 # 🧱 NDK compatível com python-for-android
 android.ndk = 25b
