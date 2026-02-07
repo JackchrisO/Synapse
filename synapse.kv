@@ -1,3 +1,4 @@
+#:import dp kivy.metrics.dp
 #:import MDRaisedButton kivymd.uix.button.MDRaisedButton
 #:import MDFlatButton kivymd.uix.button.MDFlatButton
 #:import MDTextField kivymd.uix.textfield.MDTextField
@@ -9,6 +10,7 @@ ScreenManager:
 
     MDScreen:
         name: "login"
+
         MDBoxLayout:
             orientation: "vertical"
             padding: dp(20)
@@ -27,13 +29,11 @@ ScreenManager:
             MDTextField:
                 id: login_user
                 hint_text: "Usuário"
-                mode: "rectangle"
 
             MDTextField:
                 id: login_pwd
                 hint_text: "Senha"
                 password: True
-                mode: "rectangle"
 
             MDLabel:
                 id: login_msg
@@ -43,22 +43,15 @@ ScreenManager:
 
             MDRaisedButton:
                 text: "Entrar"
-                md_bg_color: (0.55,0.45,0.95,1)
                 on_release: app.login()
 
             MDRaisedButton:
                 text: "Cadastrar"
-                md_bg_color: (0.72,0.65,1,1)
-                on_release: screen_manager.current = "cadastro"
-
-            MDLabel:
-                text: "Aviso: não é diagnóstico. Use com médico."
-                font_style: "Caption"
-                halign: "center"
-                theme_text_color: "Hint"
+                on_release: app.root.current = "cadastro"
 
     MDScreen:
         name: "cadastro"
+
         MDBoxLayout:
             orientation: "vertical"
             padding: dp(20)
@@ -72,28 +65,15 @@ ScreenManager:
             MDTextField:
                 id: cad_nome
                 hint_text: "Nome"
-                mode: "rectangle"
 
             MDTextField:
                 id: cad_idade
                 hint_text: "Idade"
-                mode: "rectangle"
-
-            MDTextField:
-                id: cad_sexo
-                hint_text: "Sexo (opcional)"
-                mode: "rectangle"
-
-            MDTextField:
-                id: cad_motivo
-                hint_text: "Motivo do uso (Epilepsia / Cuidado psicológico / Ambos)"
-                mode: "rectangle"
 
             MDTextField:
                 id: cad_pwd
                 hint_text: "Senha"
                 password: True
-                mode: "rectangle"
 
             MDLabel:
                 id: cad_msg
@@ -103,16 +83,15 @@ ScreenManager:
 
             MDRaisedButton:
                 text: "Salvar"
-                md_bg_color: (0.55,0.45,0.95,1)
                 on_release: app.cadastrar()
 
             MDRaisedButton:
                 text: "Voltar"
-                md_bg_color: (0.72,0.65,1,1)
-                on_release: screen_manager.current = "login"
+                on_release: app.root.current = "login"
 
     MDScreen:
         name: "principal"
+
         MDBoxLayout:
             orientation: "vertical"
             padding: dp(20)
@@ -123,320 +102,99 @@ ScreenManager:
                 left_action_items: [["logout", lambda x: app.sair()]]
 
             MDRaisedButton:
-                id: btn_crises
                 text: "Registrar Crises"
-                md_bg_color: (0.72,0.65,1,1)
-                on_release: app.abrir_crises()
+                on_release: app.root.current = "crises"
 
             MDRaisedButton:
                 text: "Diário"
-                md_bg_color: (0.81,0.88,1,1)
-                on_release: screen_manager.current = "diario"
+                on_release: app.root.current = "diario"
 
             MDRaisedButton:
                 text: "Medicamentos"
-                md_bg_color: (0.81,0.88,1,1)
-                on_release: app.abrir_meds()
+                on_release: app.root.current = "meds"
 
             MDRaisedButton:
                 text: "Consultas"
-                md_bg_color: (0.81,0.88,1,1)
-                on_release: screen_manager.current = "consultas"
+                on_release: app.root.current = "consultas"
 
             MDRaisedButton:
                 text: "Atividades Físicas"
-                md_bg_color: (0.81,0.88,1,1)
-                on_release: screen_manager.current = "atividades"
+                on_release: app.root.current = "atividades"
 
             MDRaisedButton:
                 text: "Alimentação"
-                md_bg_color: (0.81,0.88,1,1)
-                on_release: app.abrir_alimentacao()
+                on_release: app.root.current = "alimentacao"
 
             MDRaisedButton:
-                text: "Análise parcial de dados"
-                md_bg_color: (0.81,0.88,1,1)
-                on_release: app.abrir_analise(7)
+                text: "Análise"
+                on_release: app.root.current = "analise"
 
     MDScreen:
         name: "crises"
+
         MDBoxLayout:
             orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(10)
 
             MDTopAppBar:
                 title: "Crises"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "principal"]]
-
-            MDScrollView:
-                MDBoxLayout:
-                    id: crises_box
-                    orientation: "vertical"
-                    size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(10)
-
-            MDRaisedButton:
-                text: "Crises registradas"
-                md_bg_color: (0.72,0.65,1,1)
-                on_release: app.ver_crises_registradas()
-
-    MDScreen:
-        name: "subcrises"
-        MDBoxLayout:
-            orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(10)
-
-            MDTopAppBar:
-                title: "Subcrises"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "crises"]]
-
-            MDLabel:
-                id: subcrises_title
-                text: ""
-                halign: "center"
-
-            MDScrollView:
-                MDBoxLayout:
-                    id: subcrises_box
-                    orientation: "vertical"
-                    size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(10)
-
-    MDScreen:
-        name: "crises_reg"
-        MDBoxLayout:
-            orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(10)
-
-            MDTopAppBar:
-                title: "Crises registradas"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "crises"]]
-
-            MDScrollView:
-                MDList:
-                    id: crises_reg_box
+                left_action_items: [["arrow-left", lambda x: app.root.current = "principal"]]
 
     MDScreen:
         name: "diario"
+
         MDBoxLayout:
             orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
 
             MDTopAppBar:
                 title: "Diário"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "principal"]]
-
-            MDTextField:
-                id: diario_text
-                hint_text: "Escreva como foi seu dia..."
-                multiline: True
-                size_hint_y: 0.6
-
-            MDTextField:
-                id: diario_humor
-                hint_text: "Marque: Bom / Neutro / Ruim"
-                mode: "rectangle"
-
-            MDRaisedButton:
-                text: "Não sabe por onde começar?"
-                md_bg_color: (0.72,0.65,1,1)
-                on_release: app.gerar_frases()
-
-            MDRaisedButton:
-                text: "Salvar"
-                md_bg_color: (0.55,0.45,0.95,1)
-                on_release: app.salvar_diario()
+                left_action_items: [["arrow-left", lambda x: app.root.current = "principal"]]
 
     MDScreen:
         name: "meds"
+
         MDBoxLayout:
             orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
 
             MDTopAppBar:
                 title: "Medicamentos"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "principal"]]
-
-            MDTextField:
-                id: med_nome
-                hint_text: "Nome do medicamento"
-                mode: "rectangle"
-
-            MDTextField:
-                id: med_mg
-                hint_text: "MG"
-                mode: "rectangle"
-
-            MDTextField:
-                id: med_freq
-                hint_text: "Quantas vezes ao dia"
-                mode: "rectangle"
-
-            MDTextField:
-                id: med_compra
-                hint_text: "Data da última compra (AAAA-MM-DD)"
-                mode: "rectangle"
-
-            MDRaisedButton:
-                text: "Registrar medicamento"
-                md_bg_color: (0.55,0.45,0.95,1)
-                on_release: app.registrar_med()
-
-            MDScrollView:
-                MDList:
-                    id: meds_box
+                left_action_items: [["arrow-left", lambda x: app.root.current = "principal"]]
 
     MDScreen:
         name: "consultas"
+
         MDBoxLayout:
             orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
 
             MDTopAppBar:
                 title: "Consultas"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "principal"]]
-
-            MDTextField:
-                id: cons_nome
-                hint_text: "Nome do profissional"
-                mode: "rectangle"
-
-            MDTextField:
-                id: cons_esp
-                hint_text: "Especialidade"
-                mode: "rectangle"
-
-            MDTextField:
-                id: cons_data
-                hint_text: "Data (AAAA-MM-DD)"
-                mode: "rectangle"
-
-            MDTextField:
-                id: cons_hora
-                hint_text: "Hora (HH:MM)"
-                mode: "rectangle"
-
-            MDRaisedButton:
-                text: "Adicionar consulta"
-                md_bg_color: (0.55,0.45,0.95,1)
-                on_release: app.registrar_consulta()
+                left_action_items: [["arrow-left", lambda x: app.root.current = "principal"]]
 
     MDScreen:
         name: "atividades"
+
         MDBoxLayout:
             orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
 
             MDTopAppBar:
-                title: "Atividades Físicas"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "principal"]]
-
-            MDTextField:
-                id: ativ_nome
-                hint_text: "Selecione atividade (ou digite outra)"
-                mode: "rectangle"
-
-            MDTextField:
-                id: ativ_tempo
-                hint_text: "Tempo (minutos)"
-                mode: "rectangle"
-
-            MDTextField:
-                id: ativ_int
-                hint_text: "Intensidade"
-                mode: "rectangle"
-
-            MDRaisedButton:
-                text: "Adicionar atividade"
-                md_bg_color: (0.55,0.45,0.95,1)
-                on_release: app.registrar_atividade()
+                title: "Atividades"
+                left_action_items: [["arrow-left", lambda x: app.root.current = "principal"]]
 
     MDScreen:
         name: "alimentacao"
+
         MDBoxLayout:
             orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
 
             MDTopAppBar:
                 title: "Alimentação"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "principal"]]
-
-            MDScrollView:
-                MDBoxLayout:
-                    id: alim_box
-                    orientation: "vertical"
-                    size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(10)
-
-    MDScreen:
-        name: "sub_alim"
-        MDBoxLayout:
-            orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
-
-            MDTopAppBar:
-                title: "Subtipos"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "alimentacao"]]
-
-            MDLabel:
-                id: sub_alim_title
-                text: ""
-                halign: "center"
-
-            MDScrollView:
-                MDBoxLayout:
-                    id: sub_alim_box
-                    orientation: "vertical"
-                    size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(10)
+                left_action_items: [["arrow-left", lambda x: app.root.current = "principal"]]
 
     MDScreen:
         name: "analise"
+
         MDBoxLayout:
             orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
 
             MDTopAppBar:
                 title: "Análise"
-                left_action_items: [["arrow-left", lambda x: screen_manager.current = "principal"]]
-
-            MDScrollView:
-                MDBoxLayout:
-                    id: analise_box
-                    orientation: "vertical"
-                    size_hint_y: None
-                    height: self.minimum_height
-
-    MDScreen:
-        name: "admin"
-        MDBoxLayout:
-            orientation: "vertical"
-            padding: dp(20)
-            spacing: dp(15)
-
-            MDTopAppBar:
-                title: "Admin"
-                left_action_items: [["arrow-left", lambda x: app.sair()]]
-
-            MDRaisedButton:
-                text: "Ver usuários (sem diário)"
-                md_bg_color: (0.72,0.65,1,1)
-                on_release: app.ver_dados()
-
-            MDScrollView:
-                MDList:
-                    id: admin_box
+                left_action_items: [["arrow-left", lambda x: app.root.current = "principal"]]
