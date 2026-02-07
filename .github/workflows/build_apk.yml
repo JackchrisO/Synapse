@@ -18,17 +18,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Force JAVA_HOME to Java 17
-        run: |
-          echo "JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64" >> $GITHUB_ENV
-          echo "/usr/lib/jvm/temurin-17-jdk-amd64/bin" >> $GITHUB_PATH
-
-      # 🔥 PASSO QUE FALTAVA
-      - name: Install Android NDK 25b
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r25b
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -52,12 +41,13 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Build APK with Buildozer
+        env:
+          APP_ANDROID_ACCEPT_SDK_LICENSE: 1
         run: |
-          export APP_ANDROID_ACCEPT_SDK_LICENSE=1
-          buildozer -v android debug --log_level=2
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ndsn-debug-apk
+          name: synapse-debug-apk
           path: bin/*.apk
