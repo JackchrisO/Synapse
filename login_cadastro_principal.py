@@ -337,6 +337,13 @@ class Principal(Screen):
             btn.bind(on_release=lambda *_ , t=tela: setattr(self.manager, "current", t))
             box.add_widget(btn)
             box.add_widget(Widget(size_hint_y=None, height=8))
+            class TelaSimples(Screen):
+    def __init__(self, titulo="", **kw):
+        super().__init__(**kw)
+        box = BoxLayout(orientation="vertical", padding=20)
+        box.add_widget(label_central(titulo, 26))
+        self.add_widget(box)
+
 
 # ================= APP =================
 class AppMain(App):
@@ -345,7 +352,18 @@ class AppMain(App):
         sm.add_widget(Login(name="login"))
         sm.add_widget(Cadastro(name="cadastro"))
         sm.add_widget(Principal(name="principal"))
+
+        sm.add_widget(TelaSimples("Registrar Crises", name="registrar_crise"))
+        sm.add_widget(TelaSimples("Diário", name="principal_diario"))
+        sm.add_widget(TelaSimples("Alimentação", name="principal_alimentos"))
+        sm.add_widget(TelaSimples("Atividades", name="atividades"))
+        sm.add_widget(TelaSimples("Consultas", name="consultas"))
+        sm.add_widget(TelaSimples("Medicamentos", name="principal_med"))
+        sm.add_widget(TelaSimples("Análise", name="analise"))
+
         return sm
+
 
 if __name__ == "__main__":
     AppMain().run()
+
